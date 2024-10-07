@@ -1,0 +1,7 @@
+html{
+  scroll-behavior: smooth;
+}
+.active{
+  background-color: aliceblue;
+  color: blue;
+}
