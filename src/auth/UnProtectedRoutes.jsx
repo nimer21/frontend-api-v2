@@ -3,10 +3,10 @@ import { Navigate } from 'react-router-dom';
 
 export default function UnProtectedRoutes({ children}) {
     //const navigate = useNavigate();
-    const token = localStorage.getItem('userToken');
+    const token = sessionStorage.getItem("authTokenJWT");
     if (token) {
       //navigate('/Login');
-      return <Navigate to='/Login' replace/>
+      return <Navigate to='/' replace/>
     }
   return children;
 }

@@ -1,5 +1,5 @@
 import { Link, Navigate, NavLink, useNavigate } from "react-router-dom";
-import { FaBars, FaHome, FaLock, FaMoneyBill, FaUser, FaUserPlus, FaTh, FaSun } from "react-icons/fa";
+import { FaBars, FaHome, FaLock, FaMoneyBill, FaUser, FaLayerGroup , FaTh, FaSun } from "react-icons/fa";
 import { MdMessage } from "react-icons/md";
 import { BiAnalyse, BiSearch } from "react-icons/bi";
 import { BiCog } from "react-icons/bi";
@@ -10,11 +10,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { GrLogin } from "react-icons/gr";
 import { useDispatch, useSelector } from "react-redux";
 import { FaRegCircleUser } from "react-icons/fa6";
-import ROLE from './../../common/role';
 import SummaryApi from "../../common";
 import { toast } from "react-toastify";
 import SidebarMenu from "./SidebarMenu";
-import { setUserDetails } from "../../store/userSlice";
+import useAuthContext from "../../context/AuthContext";
 
 const routes = [
   {
@@ -40,7 +39,7 @@ const routes = [
   {
     path: "/dashboard",
     name: "المزايا",
-    icon: <FaUser />,
+    icon: <FaLayerGroup />,
   },
   {
     path: "/Rent",
@@ -141,7 +140,7 @@ const routesGeneral = [
   {
     path: "/dashboard",
     name: "المزايا",
-    icon: <FaUser />,
+    icon: <FaLayerGroup />,
   },
   {
     path: "/Rent",
@@ -187,8 +186,9 @@ const routesGeneral = [
 ];
 
 const SideBar = ({ children }) => {
-  const user = useSelector(state => state?.user?.user);
-  //console.log("Login user", user);
+  const {user, logout} = useAuthContext();
+  //console.log("Login user", user?.email);
+  //console.log("user?.is_admin", user?.is_admin);
   const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(true);
@@ -233,6 +233,7 @@ function refreshPage(){
   //navigate("/");
   //return <Navigate to='/' replace/>
 }
+/*
   const handleLogout = async () => {
     try {
       const fetchData = await fetch(SummaryApi.logout_user.url, {
@@ -255,7 +256,7 @@ function refreshPage(){
     } catch (error) {
       console.error("Error logging out", error);
     }
-  };
+  };*/
 //************************************************************************************ */
   return (
     <div className="flex">
@@ -368,7 +369,8 @@ function refreshPage(){
             );
         })}
 
-                    {user?.role === ROLE.ADMIN && ( 
+                    {/* {user?.is_admin */}
+                    {(user?.email ==="Lana@gmail.com"|| user?.email === "AnotherEmail@gmail.com") && ( 
                     <NavLink
                     to="/users"
                     //key={index}
@@ -396,7 +398,7 @@ function refreshPage(){
                   </NavLink>
                   )}
 
-                    {user?.role === ROLE.GENERAL && ( 
+                    {user?.is_admin =="0" && ( 
                     <NavLink
                     to="/saved"
                     //key={index}
@@ -427,10 +429,11 @@ function refreshPage(){
                  
 
         <div className="flex content-center items-center justify-center mt-4">
-            {user?._id ? (
+            {user?.id ? (
               <button
                 to={"/login"}
-                onClick={() => { handleLogout(); refreshPage();} }
+                // onClick={() => { handleLogout(); refreshPage();} }
+                onClick={logout}
                 className="px-3 py-1 rounded-full text-white bg-red-600 hover:bg-red-700"
               >
                 تسجيل خروج
@@ -443,6 +446,9 @@ function refreshPage(){
                 تسجيل دخول
               </Link>
             )}
+          </div>
+          <div className="flex justify-center mt-4">
+          للحصول على تجربة مشاهدة مثالية، نوصي باستخدام حجم شاشة الكمبيوتر أو اللاب توب
           </div>
       </section>
     </motion.div>

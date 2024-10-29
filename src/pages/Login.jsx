@@ -1,10 +1,8 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 import loginIcons from "../assets/signin.gif";
-import SummaryApi from './../common/index';
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { toast } from "react-toastify";
-import Context from './../context/index';
+import useAuthContext from "../context/AuthContext";
 
 const Login = () => {
 
@@ -13,8 +11,9 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const {login, errors} = useAuthContext();
+
   const navigate = useNavigate();
-  const { fetchUserDetials } = useContext(Context);
 
   const handelOnChange = (e) => {
     const { name, value } = e.target;
@@ -22,38 +21,15 @@ const Login = () => {
     setData((preve) => {
       return { ...preve, [name]: value };
     });
+    //setData({...data, [name]: value });
   };
 
-  const handelSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Login Data", data);
-    const dataResponse = await fetch("https://pixelsback.localproductsnetwork.com/api/login", {
-      //mode: 'no-cors',
-      method: 'POST',
-      credentials:'include',
-      headers: {
-        "Content-Type": "application/json",
-        //"Access-Control-Allow-Origin": "http://backad.localproductsnetwork.com",
-        //"Access-Control-Allow-Origin": "https://demo1.art-feat.com",
-        //"Access-Control-Allow-Origin": "*",
-        //"Access-Control-Allow-Credentials" : true
-      },
-      body: JSON.stringify(data),
-    });
-
-    const dataApi = await dataResponse.json();
-
-    
-    if (dataApi.success) {
-      toast.success(dataApi.message);
-      navigate("/");
-      fetchUserDetials();
-    }
-    if (dataApi.error) {
-      console.log("dataApi.error");
-      toast.error(dataApi.message);
-    }
-  };
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    // Your login logic here
+    //login({...data});    
+    login(data);    
+}
 
   return (
     <section id="login">
@@ -62,7 +38,7 @@ const Login = () => {
           <div className="w-20 h-20 mx-auto">
             <img src={loginIcons} alt="login icon" className="" />
           </div>
-          <form className="pt-6 flex flex-col gap-2" onSubmit={handelSubmit}>
+          <form className="pt-6 flex flex-col gap-2" onSubmit={handleLogin}>
             <div className="grid">
               <label htmlFor="email">إسم المستخدم : </label>
               <div className="bg-slate-100 p-2">
@@ -77,6 +53,10 @@ const Login = () => {
                   className="w-full h-full outline-none bg-transparent"
                 />
               </div>
+              {errors && (
+                <div className="flex">
+                  <span className="text-red-400 text-sm m-2 p-2">{errors}</span>
+                </div>)}
             </div>
             <div>
               <label htmlFor="email">كلمة المرور : </label>
@@ -98,6 +78,16 @@ const Login = () => {
                   <span>{showPassword ? <FaEye /> : <FaEyeSlash />}</span>
                 </div>
               </div>
+              {errors && 
+                <div className="flex">
+                  <span className="text-red-400 text-sm m-2 p-2">{errors}</span>
+                </div>}
+              {/* <Link
+                to={"/forgot-password"}
+                className="block w-fit ml-auto hover:underline hover:text-red-600"
+              >
+                نسيت كلمة المرور؟
+              </Link> */}
             </div>
             <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block mt-6">
               تسجيل دخول

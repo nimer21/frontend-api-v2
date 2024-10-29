@@ -2,36 +2,21 @@ import { useState, useEffect } from "react";
 import "../components/PixelGrid/./PixelGrid.css";
 import { Button, Form, Modal } from "react-bootstrap";
 import countries from "./../helpers/countries";
-import { useSelector } from "react-redux";
+import axios from "../api/axios";
 import SummaryApi from "../common";
- 
-const Saved = ({ rows, cols }) => {
-  const localStorageKey = "pixelGridImages";
+//************************************************************************************ */
+const Saved = () => {
+  const token = sessionStorage.getItem('authTokenJWT');
 
-  const user = useSelector(state => state?.user?.user);
-
-  const fixedCols = 95; 
-  const fixedRows = 75; 
+  const fixedCols = 95;
+  const fixedRows = 75;
   const [pixelSize, setPixelSize] = useState(0);
-  const initialGrid =
-    JSON.parse(localStorage.getItem(localStorageKey)) ||
-    Array(fixedRows * fixedCols).fill({ color: "#ccc", image: null });
-  
-  const createGrid = () => {
-    let grid = [];
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        grid.push(
-          <div key={`${i}-${j}`} className="pixel">
-          </div>
-        );
-      }
-    }
-    return grid;
-  };
-  const [grid, setGrid] = useState(initialGrid); // default color for each pixel
+  const initialGrid = Array(fixedRows * fixedCols).fill({ color: "#ccc", image: null });
+    const [loading, setLoading] = useState(true);
+  //************************************************************************************
+  const [grid, setGrid] = useState(initialGrid);
 
-  const [gridTemp, setGridTemp] = useState(initialGrid); // default color for each pixel
+  const [gridTemp, setGridTemp] = useState(initialGrid);
 
   const [selectedGrid, setSelectedGrid] = useState([]);
 
@@ -43,18 +28,22 @@ const Saved = ({ rows, cols }) => {
   const [url, setUrl] = useState("");
   const [desc, setDesc] = useState("");
 
-  
+  //************************************************************************************
   const [data, setData] = useState({
-    selectedSquares: "",
-    advImage: [],
+    pixel: [],
+    img: [],
+    advCoName:"",
     email: "",
-    mobile:"",
+    phone:"",
     country: "",
-    url: "",
+    link: "",
     description: "",
+    type: "",
   });
+    //************************************************************************************
   const handleOnChange = (e) => {
     const { name, value } = e.target;
+    //setData({ ...data, [e.target.name]: e.target.value });
     setData((prev) => {
       return {
         ...prev,
@@ -62,38 +51,37 @@ const Saved = ({ rows, cols }) => {
       };
     });
   };
+  //************************************************************************************
 
-  const handleSubmit2 = async (e) => {
-    e.preventDefault();
-    const { selectedSquares, advImage, country, url, description } = data;
-    if (
-      !advImage.length ||
-      !email ||
-      !mobile ||
-      !country ||
-      !url ||
-      !description
-    ) {
-      alert("جميع الحقول مطلوبة");
-      return;
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setSelectedImage(reader.result);
+        //setSelectedImage(file);
+
+        setData((prev) => {
+          return {
+            ...prev,
+            //img: [...prev.img, reader.result],
+            img: [...prev.img, file],
+          };
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
-  //************************************************************************************ */
-  useEffect(() => {
-  }, [selectedPixels]);
-
+  //************************************************************************************/
   useEffect(() => {
     const calculatePixelSize = () => {
       const screenWidth = window.innerWidth-45;
       const screenHeight = window.innerHeight-45;
-      console.log("screenWidth=====", screenWidth);
-      console.log("screenHeight=====", screenHeight);
 
       const calculatedPixelWidth = Math.floor(screenWidth / fixedCols);
       const calculatedPixelHeight = Math.floor(screenHeight / fixedRows);
 
       const size = Math.min(calculatedPixelWidth, calculatedPixelHeight);
-      console.log("Size=====", size);
       setPixelSize(size);
     };
 
@@ -102,6 +90,7 @@ const Saved = ({ rows, cols }) => {
 
     return () => window.removeEventListener("resize", calculatePixelSize);
   }, [fixedCols, fixedRows]);
+  //************************************************************************************/
   const handlePixelClick = (index) => {
     if (selectedPixels.includes(index)) {
       setSelectedPixels(selectedPixels.filter((i) => i !== index));
@@ -109,26 +98,27 @@ const Saved = ({ rows, cols }) => {
       setSelectedPixels([...selectedPixels, index]);
     }
 
-
     const newGrid = [...gridTemp];
     newGrid[index] = {
       ...newGrid[index],
-      color: newGrid[index].color === "#ccc" ? "#000" : "#ccc",
+      color: newGrid[index].color === "#ccc" ? "#000" : "#ccc", // Toggle color
     };
     setGridTemp(newGrid);
   };
+  //************************************************************************************ */
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const { selectedSquares, advCoName, advImage,email,mobile, country, url, description } = data;
+    const { pixel, img,advCoName, email,phone, country, link, description } = data;
 
     if (
-      !advImage.length ||
+      // !selectedSquares ||
+      !img.length ||
       !advCoName ||
       !email ||
-      !mobile ||
+      !phone ||
       !country ||
-      !url ||
+      !link ||
       !description
     ) {
       alert("جميع الحقول مطلوبة");
@@ -137,32 +127,46 @@ const Saved = ({ rows, cols }) => {
 
     const newGrid2 = [...gridTemp];
 
-    selectedPixels.forEach((index) => {
+    selectedPixels?.forEach((index) => {
       newGrid2[index] = {
         ...newGrid2[index],
-        advCoName: data.advCoName,
-        country: data.country,
-        color: "#ff0",
+        //image: selectedImage,
+        //country: selectedCountry,
+        pixel_number: index.toString(),
+        pixel: selectedPixels,
+        img:data.img[0],
         email: data.email,
-        mobile:data.mobile,
-        url: data.url,
+        phone:data.phone,
+        country: data.country,
+        link: data.link,
         description: data.description,
-        name: user?.name,
-        date: new Date().toLocaleString() + "",
+        type: data.type,
+        advCoName: data.advCoName,
+        color: "#ff0",
+        //description: desc,
+        //name: user?.name,
+        //date: new Date().toLocaleString() + "",
       };
     });
 
+    //console.log("selectedPixels",selectedPixels); // (4) [11, 10, 105, 106]
     setGrid(newGrid2);
     setGridTemp(newGrid2);
 
+    sendPixelsToBackend(data, token);
+
+    //setData(null);
+    // clear form data
     setData({
-      selectedSquares: "",
-      advImage: [],
+      pixel: [],
+      img: [],
+      advCoName:"",
       email:"",
-      mobile:"",
+      phone:"",
       country: "",
-      url: "",
+      link: "",
       description: "",
+      type: "",
     });
 
     setSelectedImage(null);
@@ -171,94 +175,205 @@ const Saved = ({ rows, cols }) => {
 
     handleCloseModal();
   };
+  //************************************************************************************
   const handleOpenModal = () => {
     if (selectedPixels.length === 0) {
       alert("برجاء إختيار مربع واحد على الأقل.");
       return;
     }
+    setData((prev) => {
+      return {
+        ...prev,
+        //img: [...prev.img, reader.result],
+        pixel: [...prev?.pixel, selectedPixels],
+      };
+    });
+
     setShowModal(true);
   };
+  //************************************************************************************
 
   const handleCloseModal = () => {
     setShowModal(false);
+    // setSelectedImage(null);
+    // setSelectedCountry('');
+    // setSelectedPixels([]); // Take Care Nimer
   };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setSelectedImage(reader.result);
-
-        setData((prev) => {
-          return {
-            ...prev,
-            advImage: [...prev.advImage, reader.result],
-          };
-        });
+  //************************************************************************************
+  // Function to convert API response to flat array with pixel number as index
+  const convertAPIResponseToIndexedArray = (apiResponse, defaultColor = "#ccc", gridSize = 7125) => {
+    // Initialize a flat array with default pixel objects
+    const flatArray = Array.from({ length: gridSize }, () => ({
+        image: null,  // Default image as null
+        color: defaultColor,          // Default color for all pixels
+    }));
+  
+    // Loop through each pixel object in the API response
+    apiResponse?.forEach((pixelObj) => {
+      const pixelData = Object.values(pixelObj)[0]; // Extract pixel data object
+      const pixelIndex = parseInt(pixelData.pixel_number, 10); // Convert pixel_number to index
+  
+      // Place the pixel data at the corresponding index in the flat array
+      flatArray[pixelIndex] = {
+        image: pixelData.img || null,  // Use image from API or null if not provided
+        advCoName: pixelData.company_name, 
+        status : pixelData.status,
+        email: pixelData.email,
+        phone: pixelData.phone,
+        country: pixelData.country,
+        link: pixelData.link,
+        description: pixelData.description || null,
+        unit: pixelData.unit,
+        color: defaultColor,          // Default color (or modify if necessary)
+        type: pixelData.type,
+        partial_img: pixelData.partial_img || null
       };
-      reader.readAsDataURL(file);
+    });
+  
+    return flatArray; // Return the flat array with pixels indexed by pixel_number
+  };
+    
+  /***************************************************************************************** */
+const sendPixelsToBackend = async (pixelData, token) => {
+  try {
+
+  const formData = new FormData();
+  
+  // Add the image
+  formData.append('img', pixelData.img[0]); //image_url_or_base64_encoded_image
+  formData.append('advCoName', pixelData.advCoName); //image_url_or_base64_encoded_image
+
+  // Add other fields
+  formData.append('email', pixelData.email);
+  formData.append('phone', pixelData.phone);
+  formData.append('country', pixelData.country);
+  formData.append('link', pixelData.link);
+  formData.append('description', pixelData.description);
+  formData.append('type', "#ff0");
+  formData.append('color', "#ff0");
+
+  // Add each pixel value
+  selectedPixels.forEach((pixel, index) => {
+    formData.append(`pixel[${index}]`, pixel); // Laravel expects pixel.* notation
+  });
+
+    const responseRequest = await axios.post(
+      "api/request/pixels",
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, //{"message":"Unauthenticated."} | 401 (Unauthorized)
+          'Content-Type': 'multipart/form-data'
+        },
+      }
+    );
+
+    /** Network Response from backend
+     * {
+    "message": "The img field must be a file of type: png, jpg, jpeg, gif, svg, webp.",
+    "errors": {
+        "img": [
+            "The img field must be a file of type: png, jpg, jpeg, gif, svg, webp."
+        ]
+    }
+}
+     */
+
+    // if (!responseRequest.ok) {
+    //   throw new Error('Failed to send pixel data to backend');
+    // }
+
+    //console.log('Response from backend:', responseRequest); // resp.data.message =  "message": "a request has been sent to the admin , waiting for admin's approval"
+    //{data: {…}, status: 200, statusText: '', headers: AxiosHeaders, config: {…}, …}
+
+    //return result;
+
+  } catch (error) {
+    console.error('Error sending pixel data:', error);
+    console.error('token', token);
+  }
+};
+
+/** Network Response from backend
+ * {
+    "message": "The img field is required. (and 4 more errors)",
+    "errors": {
+        "img": [
+            "The img field is required."
+        ],
+        "email": [
+            "The email field is required."
+        ],
+        "phone": [
+            "The phone field is required."
+        ],
+        "country": [
+            "The country field is required."
+        ],
+        "link": [
+            "The link field is required."
+        ]
+    }
+}
+ */
+  //************************************************************************************ */
+// Fetch data from the backend or initialize a new grid
+useEffect(() => {
+  const fetchPixelData = async () => {
+    try {
+      const response = await fetch('https://pixelsback.localproductsnetwork.com/api/approved/pixels', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch pixel data');
+      }
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+       const localStorageData = convertAPIResponseToIndexedArray(data);
+       const approvedGrid = localStorageData || Array(fixedRows * fixedCols).fill({ color: "#ccc", image: null });
+
+        setGrid(localStorageData); // Use the fetched pixel data
+        setGridTemp(localStorageData); // Use the fetched pixel data
+        //console.log("data.pixels ",localStorageData); //
+      } else {
+        // Initialize a new grid with default values if no data is found
+        //const newGrid = initializeGrid(10, 10); // For example, 10x10 grid
+        const newGrid = Array(fixedRows * fixedCols).fill({ color: "#ccc", image: null }); // For example, 10x10 grid
+        setGrid(newGrid);
+        setGridTemp(newGrid);
+        //console.log("data ",data[1].data); //
+      }
+
+      setLoading(false); // Data loaded
+    } catch (error) {
+      console.error('Error fetching pixel data:', error);
+
+      // If error occurs, initialize a new grid
+      const newGrid = Array(fixedRows * fixedCols).fill({ color: "#ccc", image: null });
+      setGrid(newGrid);
+      setGridTemp (newGrid);
+
+      setLoading(false);
     }
   };
 
-  const handleCountryChange = (e) => {
-    setSelectedCountry(e.target.value);
-  };
-  const handleUrlChange = (e) => {
-    setUrl(e.target.value);
-  };
-  const handleDescChange = (e) => {
-    setDesc(e.target.value);
-  };
+  fetchPixelData();
+}, []);
 
-  const handleReservedPixels = (selectedIndexes) => {
-    setShowModal(false);
-  };
-  const handlePixelReset = (index) => {
-    const newGrid = [...grid];
-    newGrid[index] = {
-      ...newGrid[index],
-      image: null,
-      advCoName: null,
-      email:"",
-      mobile:"",
-      country: null,
-      color: null,
-      url: "",
-      desc: null,
-    };
-    setGrid(newGrid);
-  };
   //************************************************************************************ */
 
-  const handleResetAll = () => {
-    setGrid(newGrid2);
-    setSelectedGrid([]);
-  };
+if (loading) {
+  return <div className="flex items-center justify-center">جاري تحميل المربعات &#128512; ...</div>;
+}
 //************************************************************************************
-  const fetchData = async () => {
-    const response = await fetch(SummaryApi.request_pixels.url, {
-      method: SummaryApi.request_pixels.method,
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    const dataResponse = await response.json();
-    setData(dataResponse?.data || []);
-  };
-  //************************************************************************************ */
-
-  useEffect(() => {
-    fetchData();
-  }, [grid]);
-  //************************************************************************************ */
-
   return (
     <>
       <div className="flex mb-2 mr-5">
-
         <Button variant="primary" onClick={handleOpenModal}>
           إرسال المربعات المحجوزة
         </Button>
@@ -266,12 +381,14 @@ const Saved = ({ rows, cols }) => {
 
       <Modal
         show={showModal}
+        //onHide={() => setShowModal(false)}
         onHide={handleCloseModal}
         animation={true}
         size="lg"
-        keyboard={false} 
+        keyboard={false} //Close the modal when escape key is pressed
         scrollable={false}
         restoreFocus={true}
+        //dialogClassName="modal-80w"
         aria-labelledby="contained-modal-title-vcenter"
         centered
       >
@@ -279,10 +396,12 @@ const Saved = ({ rows, cols }) => {
           <Modal.Title></Modal.Title>
         </Modal.Header>
         <Modal.Body
+         //max-height= {calc('100vh - 210px')}
+         //overflow-y= {auto}
          >
           هل أنت متأكد أنك تريد حجز المربعات؟{" "}
  <div className="grid grid-cols-6 border border-solid bg-primary font-bold text-white rounded-sm p-1">
-  {selectedPixels.map((number) => <div key={number}>{number}</div>)}</div>
+  {selectedPixels?.map((number) => <div key={number}>{number}</div>)}</div>
 
           <Form
             onSubmit={handleSubmit}
@@ -311,6 +430,8 @@ const Saved = ({ rows, cols }) => {
               <Form.Control
                 type="text"
                 placeholder="إسم الشركة / المنتج"
+                //onChange={handleUrlChange}
+                //value={data.url}
                 name="advCoName"
                 value={data.advCoName}
                 onChange={handleOnChange}
@@ -327,6 +448,7 @@ const Saved = ({ rows, cols }) => {
                 as="select"
                 value={data.country}
                 name="country"
+                //onChange={handleCountryChange}
                 onChange={handleOnChange}
               >
                 <option value="">إختار الدولة...</option>
@@ -337,14 +459,15 @@ const Saved = ({ rows, cols }) => {
                     </option>
                   );
                 })}
+                {/* Add more countries as needed */}
               </Form.Control>
 
               <Form.Label>الرابط: </Form.Label>
               <Form.Control
                 type="text"
                 placeholder="رابط الموقع"
-                name="url"
-                value={data.url}
+                name="link"
+                value={data.link}
                 onChange={handleOnChange}
                 required
                 autoFocus
@@ -363,6 +486,7 @@ const Saved = ({ rows, cols }) => {
                 name="description"
                 onChange={handleOnChange}
                 required
+                //resize= "none"
                 no-resize
                 className="p-2 bg-slate-100 border rounded max-h-32"
               />
@@ -372,6 +496,7 @@ const Saved = ({ rows, cols }) => {
               <Form.Control
                 type="email"
                 placeholder="البريد الإلكتروني"
+                //value={data.url}
                 name="email"
                 value={data.email}
                 onChange={handleOnChange}
@@ -385,8 +510,10 @@ const Saved = ({ rows, cols }) => {
               <Form.Control
                 type="text"
                 placeholder="رقم الهاتف"
-                name="mobile"
-                value={data.mobile}
+                //onChange={handleUrlChange}
+                //value={data.url}
+                name="phone"
+                value={data.phone}
                 onChange={handleOnChange}
                 required
                 autoFocus
@@ -417,7 +544,7 @@ const Saved = ({ rows, cols }) => {
           <div
             key={index}
             className={`pixel ${
-              pixel.color !== "#000" && pixel.color !== "#ccc"
+              pixel.color !== "#000" && pixel.color !== "#ccc" || pixel.image !== null
                 ? "pointer-events-none"
                 : "none"
             }`} //pointer-events-none
@@ -425,7 +552,7 @@ const Saved = ({ rows, cols }) => {
               width: `${pixelSize}px`,
               height: `${pixelSize}px`,
               backgroundColor: pixel.image ? "transparent" : pixel.color,
-              backgroundImage: pixel.image ? `url(${pixel.image})` : "none",
+              backgroundImage: pixel.partial_img ? `url(https://pixelsback.localproductsnetwork.com/public/PartialImages/${pixel.partial_img})` : "none",
               backgroundSize: pixel.backgroundSize || "cover",
               backgroundPosition: pixel.backgroundPosition || "center",
               transition:
@@ -433,10 +560,6 @@ const Saved = ({ rows, cols }) => {
             }}
             title={`إعلان ${index}`} // Add the tooltip text here
             onClick={() => handlePixelClick(index)}
-            // onContextMenu={(e) => {
-            //   e.preventDefault();
-            //   handlePixelReset(index);
-            // }}
           ></div>
         ))}
       </div>
